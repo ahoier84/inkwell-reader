@@ -1,39 +1,89 @@
-# 📰 Inkwell — Clean Article Reader
+# Inkwell — Clean Article Reader
 
-A self-hosted web app that pulls articles from any website and RSS feed, strips out ads and clutter, and presents them in a beautiful reading view.
+A self-hosted, ad-free article reader with RSS feeds and bookmarking. Built with React + Netlify Functions + Supabase.
 
-## Features
-- **Article Reader**: Paste any URL and get a clean, ad-free reading view (Mozilla Readability — same engine as Firefox Reader Mode)
-- **RSS Feeds**: Add RSS/Atom feed sources, browse headlines, and open articles cleanly
-- **Bookmarks**: Save articles to read later, with unread tracking
-- **Persistent Storage**: SQLite database keeps your sources and bookmarks across restarts
+## Stack
+
+- **Frontend**: React (hosted on Netlify, free)
+- **Functions**: Netlify Functions (serverless API, free tier: 125k requests/month)
+- **Database**: Supabase Postgres (free tier: 500MB)
+
+---
+
+## Deploy to Netlify + Supabase (Free)
+
+### Step 1: Set Up Supabase
+
+1. Go to [supabase.com](https://supabase.com) and create a free account
+2. Create a **New Project** (free tier)
+3. Once the project is ready, go to **SQL Editor** and run:
+
+```sql
+CREATE TABLE sources (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  url TEXT NOT NULL,
+  type TEXT DEFAULT 'rss',
+  added_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE bookmarks (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  url TEXT NOT NULL UNIQUE,
+  title TEXT,
+  excerpt TEXT,
+  source_name TEXT,
+  saved_at TIMESTAMPTZ DEFAULT now(),
+  read BOOLEAN DEFAULT false
+);
+```
+
+4. Go to **Settings → API** and copy:
+   - **Project URL** → `SUPABASE_URL`
+   - **anon/public key** → `SUPABASE_ANON_KEY`
+
+### Step 2: Deploy to Netlify
+
+1. Push this repo to GitHub (already done at `github.com/ahoier84/inkwell-reader` — push this new version)
+2. Go to [netlify.com](https://netlify.com) → **Add new site → Import from Git**
+3. Connect GitHub, select `inkwell-reader`
+4. Netlify will auto-detect the `netlify.toml` settings:
+   - **Base directory**: `src`
+   - **Build command**: `npm run build`
+   - **Publish directory**: `src/build`
+   - **Functions directory**: `netlify/functions`
+5. Before deploying, go to **Site settings → Environment variables** and add:
+   - `SUPABASE_URL` = your Supabase project URL
+   - `SUPABASE_ANON_KEY` = your Supabase anon key
+6. Click **Deploy site** — done!
+
+---
+
+## Starter RSS Feeds
+
+Add these in the app after deployment:
+
+| Name | URL |
+|------|-----|
+| The Verge | `https://www.theverge.com/rss/index.xml` |
+| Ars Technica | `https://feeds.arstechnica.com/arstechnica/index` |
+| Hacker News | `https://news.ycombinator.com/rss` |
+| BBC News | `https://feeds.bbci.co.uk/news/rss.xml` |
+
+---
 
 ## Local Development
 
 ```bash
-npm run install:all     # install both frontend + backend deps
-npm run dev:backend     # start API on :3001
-npm run dev:frontend    # start React on :3000 (new terminal)
+# Install dependencies
+npm install
+cd netlify/functions && npm install && cd ../..
+cd src && npm install && cd ..
+
+# Set env vars
+cp .env.example .env.local
+# Fill in SUPABASE_URL and SUPABASE_ANON_KEY
+
+# Run locally (requires netlify-cli)
+npx netlify dev
 ```
-
-## Deploy to Render.com (free tier)
-
-1. Push this repo to GitHub
-2. Go to render.com → New → Blueprint
-3. Connect your repo — Render will detect `render.yaml` automatically
-4. Update `REACT_APP_API_URL` in `render.yaml` with your API service URL after first deploy
-
-## Starter RSS Feeds
-
-| Source | RSS URL |
-|--------|---------|
-| The Verge | `https://www.theverge.com/rss/index.xml` |
-| Ars Technica | `https://feeds.arstechnica.com/arstechnica/index` |
-| Hacker News | `https://news.ycombinator.com/rss` |
-| BBC News | `http://feeds.bbci.co.uk/news/rss.xml` |
-
-## Tech Stack
-- **Backend**: Node.js + Express + SQLite (better-sqlite3)
-- **Article Parsing**: @mozilla/readability + jsdom
-- **RSS Parsing**: rss-parser
-- **Frontend**: React with editorial dark theme
