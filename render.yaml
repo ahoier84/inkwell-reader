@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: inkwell-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 3001
+    disk:
+      name: db
+      mountPath: /data
+      sizeGB: 1
+
+  - type: web
+    name: inkwell-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && REACT_APP_API_URL=https://inkwell-api.onrender.com npm run build
+    staticPublishPath: build
